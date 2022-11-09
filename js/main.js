@@ -46,5 +46,7 @@ function getWeather () {
     document.getElementById("data_sunrise").innerHTML = new Date(json.sys.sunrise*1000).toLocaleTimeString();
     document.getElementById("data_sunset").innerHTML = new Date(json.sys.sunset*1000).toLocaleTimeString();
     document.getElementById("data_sealevel").innerHTML = json.main.sea_level;
+    document.getElementById("data_grndlevel").innerHTML = json.main.grnd_level;
+    document.getElementById("data_visibility").innerHTML = json.visibility;
   });
 }
