@@ -13,7 +13,7 @@ function loadSite() {
     }
 }
 function getWeather() {
-    let url = 'http://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=6f69952fb2f49c883c45a29160ed59ef'
+    let url = 'https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=6f69952fb2f49c883c45a29160ed59ef'
     console.log(url);
     fetch(url)
         .then(function (response) {
