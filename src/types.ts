@@ -98,11 +98,3 @@ export interface UserDashboardPreferences {
   updatedAt: number; // server timestamp or millisecond number
 }
 
-// Interface for reporting network/runtime diagnostic logs
-export interface DiagnosticLog {
-  id: string;
-  timestamp: string;
-  category: "network" | "firebase" | "weather-gen" | "ui";
-  message: string;
-  severity: "info" | "warning" | "error";
-}

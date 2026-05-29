@@ -1,24 +1,24 @@
-import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Wind, ThermometerSnowflake } from "lucide-react";
-import { DailyForecast, UnitSystem, WeatherCondition } from "../types";
+import { Calendar } from "lucide-react";
+import { DailyForecast, UnitSystem } from "../types";
 
-export function getWeatherIcon(condition: WeatherCondition, sizeClass = "w-5 h-5") {
+export const getWeatherIcon = (condition: string) => {
   switch (condition) {
     case "Clear":
-      return <Sun className={`${sizeClass} text-amber-500`} />;
+      return <span className="text-yellow-400 text-lg md:text-xl drop-shadow-sm">☀️</span>;
     case "Clouds":
-      return <Cloud className={`${sizeClass} text-slate-400 dark:text-slate-500`} />;
+      return <span className="text-gray-300 text-lg md:text-xl drop-shadow-sm">☁️</span>;
     case "Rain":
-      return <CloudRain className={`${sizeClass} text-blue-500`} />;
+      return <span className="text-blue-400 text-lg md:text-xl drop-shadow-sm">🌧️</span>;
     case "Snow":
-      return <CloudSnow className={`${sizeClass} text-cyan-400`} />;
+      return <span className="text-blue-200 text-lg md:text-xl drop-shadow-sm">❄️</span>;
     case "Storm":
-      return <CloudLightning className={`${sizeClass} text-purple-500`} />;
+      return <span className="text-purple-400 text-lg md:text-xl drop-shadow-sm">⛈️</span>;
     case "Windy":
-      return <Wind className={`${sizeClass} text-teal-400`} />;
+      return <span className="text-teal-300 text-lg md:text-xl drop-shadow-sm">💨</span>;
     default:
-      return <Sun className={`${sizeClass} text-amber-500`} />;
+      return <span className="text-gray-400 text-lg md:text-xl drop-shadow-sm">🌤️</span>;
   }
-}
+};
 
 interface DailyForecastListProps {
   forecast: DailyForecast[];
@@ -27,69 +27,59 @@ interface DailyForecastListProps {
 
 export default function DailyForecastList({ forecast, unitSystem }: DailyForecastListProps) {
   const isMetric = unitSystem === "metric";
-  const tempUnit = isMetric ? "°C" : "°F";
 
-  const formatTemp = (c: number) => {
-    if (isMetric) return `${Math.round(c)}${tempUnit}`;
-    return `${Math.round((c * 9) / 5 + 32)}${tempUnit}`;
-  };
+  // Find min and max for the week to calculate gradient bars correctly
+  const weekMin = Math.min(...forecast.map(d => d.minTemp));
+  const weekMax = Math.max(...forecast.map(d => d.maxTemp));
+  const tempRange = weekMax - weekMin || 1;
 
   return (
-    <div id="daily-forecast-container" className="p-5 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm transition-colors duration-300">
-      <h3 className="font-semibold text-slate-800 dark:text-gray-100 mb-4 flex items-center gap-2 text-sm md:text-base">
-        <ThermometerSnowflake className="w-4.5 h-4.5 text-blue-600" /> 7-Day Atmospheric Outlook
-      </h3>
-      
-      <div className="space-y-3">
-        {forecast.map((day, idx) => (
-          <div
-            key={idx}
-            className="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-gray-800/60 hover:bg-slate-50/50 dark:hover:bg-gray-850/20 transition-colors"
-          >
-            {/* Day and Date */}
-            <div className="w-24 text-left">
-              <span className="block text-xs font-semibold text-gray-800 dark:text-gray-200">
-                {idx === 0 ? "Today" : day.day}
-              </span>
-              <span className="block text-[10px] text-gray-400 mt-0.5">
-                {day.date}
-              </span>
-            </div>
+    <div className="glass-panel p-4">
+      <div className="flex items-center gap-1.5 text-white/70 mb-3 border-b border-white/10 pb-2">
+        <Calendar className="w-3.5 h-3.5" />
+        <span className="text-[11px] font-semibold uppercase tracking-wider">
+          7-Day Forecast
+        </span>
+      </div>
 
-            {/* Condition Icon & Description */}
-            <div className="flex-1 flex items-center gap-2.5 px-2">
-              {getWeatherIcon(day.condition)}
-              <span className="text-xs text-gray-500 dark:text-gray-400 capitalize hidden sm:inline-block leading-normal">
-                {day.description}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 capitalize inline-block sm:hidden leading-normal">
-                {day.condition}
-              </span>
-            </div>
+      <div className="flex flex-col space-y-3 mt-2">
+        {forecast.map((day, index) => {
+          const minT = isMetric ? Math.round(day.minTemp) : Math.round((day.minTemp * 9) / 5 + 32);
+          const maxT = isMetric ? Math.round(day.maxTemp) : Math.round((day.maxTemp * 9) / 5 + 32);
+          
+          const leftPercent = ((day.minTemp - weekMin) / tempRange) * 100;
+          const widthPercent = ((day.maxTemp - day.minTemp) / tempRange) * 100;
 
-            {/* Precipitation probability bubble */}
-            <div className="w-16 text-center">
-              {day.precipitationProbability > 15 ? (
-                <span className="inline-block text-[10px] bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
-                  {day.precipitationProbability}% Rain
+          return (
+            <div key={index} className="flex items-center justify-between text-white">
+              <span className="w-16 font-medium text-base">
+                {index === 0 ? "Today" : day.day.substring(0, 3)}
+              </span>
+              
+              <div className="flex-shrink-0 w-8 flex justify-center">
+                {getWeatherIcon(day.condition)}
+              </div>
+
+              <div className="flex items-center gap-3 flex-1 ml-4">
+                <span className="w-8 text-right text-white/60 font-semibold text-base">
+                  {minT}°
                 </span>
-              ) : (
-                <span className="text-[10px] text-gray-400">-</span>
-              )}
+                
+                {/* Temperature Range Bar */}
+                <div className="flex-1 h-1.5 bg-black/20 rounded-full overflow-hidden relative">
+                  <div 
+                    className="absolute h-full rounded-full bg-gradient-to-r from-blue-400 via-green-400 to-yellow-400"
+                    style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                  />
+                </div>
+                
+                <span className="w-8 text-left font-semibold text-base">
+                  {maxT}°
+                </span>
+              </div>
             </div>
-
-            {/* Range high & low bar */}
-            <div className="w-20 text-right flex items-center justify-end gap-2.5">
-              <span className="text-xs font-semibold text-gray-800 dark:text-gray-200" title="Daily high">
-                {formatTemp(day.maxTemp)}
-              </span>
-              <span className="text-xs font-medium text-gray-400" title="Daily low">
-                {formatTemp(day.minTemp)}
-              </span>
-            </div>
-
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
