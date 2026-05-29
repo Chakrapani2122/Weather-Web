@@ -1,10 +1,10 @@
 {
-  "projectId": "deep-timing-1cf5x",
-  "appId": "1:745859461255:web:c51ffaafd5331769e48822",
-  "apiKey": "AIzaSyD3fBPvLeB5ihDP0jzSrMZrZG_FyPr5x7s",
-  "authDomain": "deep-timing-1cf5x.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-2f1a7b69-827e-4cb6-98f1-0069a922e36a",
-  "storageBucket": "deep-timing-1cf5x.firebasestorage.app",
-  "messagingSenderId": "745859461255",
+  "projectId": "weather-web-chakra",
+  "appId": "1:432701426586:web:fb01951cce0d7781334823",
+  "storageBucket": "weather-web-chakra.firebasestorage.app",
+  "apiKey": "AIzaSyBGPV3c-a00xsCp32jQ2B1TVxluT-h11b8",
+  "authDomain": "weather-web-chakra.firebaseapp.com",
+  "messagingSenderId": "432701426586",
+  "firestoreDatabaseId": "(default)",
   "measurementId": ""
 }
