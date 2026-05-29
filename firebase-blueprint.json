@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "UserDashboardPreferences": {
+      "title": "User Dashboard Preferences",
+      "description": "Customizable weather dashboard configuration, saved cities list, and metrics preference settings for authenticated users.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Authenticating user identifier" },
+        "email": { "type": "string", "description": "Authenticated primary email address" },
+        "displayName": { "type": "string", "description": "Optional profile display designation" },
+        "photoURL": { "type": "string", "description": "Profile picture URL link" },
+        "savedCities": {
+          "type": "array",
+          "description": "Custom ordered index of saved locations to render on multi-city dashboard card panels"
+        },
+        "unitSystem": {
+          "type": "string",
+          "enum": ["metric", "imperial"],
+          "description": "Temperature and velocity unit preference metric system"
+        },
+        "gridConfig": {
+          "type": "object",
+          "description": "Card toggles representing customizable meteorological metrics visibility"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Latest synchronization epoch milliseconds stamp"
+        }
+      },
+      "required": ["uid", "email", "savedCities", "unitSystem", "gridConfig", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserDashboardPreferences",
+      "description": "Individual workspace containing metric parameters and saved list of forecasting locations for a signed-in user."
+    }
+  }
+}

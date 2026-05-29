@@ -1,0 +1,6 @@
+{
+  "name": "Weather Forecast Station",
+  "description": "Full-stack weather forecasting app featuring customizable city dashboards, historical data visualization, real-time alerts, Google authentication, and offline access.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
