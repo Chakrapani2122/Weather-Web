@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { fetchWeatherData } from "./api";
-import { UserDashboardPreferences } from "../types";
+import { UserDashboardPreferences } from "./types";
 
 export function useWeatherAlerts(user: UserDashboardPreferences | null) {
   const alertedCities = useRef<Set<string>>(new Set());

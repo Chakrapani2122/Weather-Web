@@ -16,6 +16,7 @@ import DailyForecastList from "./components/DailyForecastList";
 import DashboardGrid from "./components/DashboardGrid";
 import HistoricalCharts from "./components/HistoricalCharts";
 import DashboardCustomizer from "./components/DashboardCustomizer";
+import UserProfile from "./components/UserProfile";
 import { RefreshCw } from "lucide-react";
 
 const INITIAL_CITY = "Singapore";
@@ -48,6 +49,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // App Synchronization & Identity states
   const [currentUser, setCurrentUser] = useState<UserDashboardPreferences | null>(null);
@@ -65,6 +67,7 @@ export default function App() {
       setActiveCity(data.city);
     } catch (err: any) {
       console.error("Failed to fetch weather", err);
+      alert(`Unable to fetch weather for "${city}". Please check the city name and try again.`);
     } finally {
       setIsSearching(false);
       setIsLoading(false);
@@ -190,9 +193,43 @@ export default function App() {
     persistPreferencesAndSync({ ...currentUser, savedCities: cityList });
   };
 
+  const handleAddCity = async (city: string) => {
+    if (!currentUser) return;
+    const clean = city.trim();
+    const exists = currentUser.savedCities.find((c) => c.toLowerCase() === clean.toLowerCase());
+    
+    if (exists) {
+      throw new Error("City already in your list");
+    }
+    
+    // Validate city by fetching weather
+    await fetchWeatherData(clean);
+    
+    const cityList = [...currentUser.savedCities, clean];
+    persistPreferencesAndSync({ ...currentUser, savedCities: cityList });
+  };
+
+  const handleRemoveCity = (city: string) => {
+    if (!currentUser) return;
+    const cityList = currentUser.savedCities.filter(
+      (c) => c.toLowerCase() !== city.toLowerCase()
+    );
+    persistPreferencesAndSync({ ...currentUser, savedCities: cityList });
+  };
+
+  const handleSelectCity = (city: string) => {
+    fetchWeather(city);
+  };
+
   const handleUpdateConfig = (newConfig: CustomizableGridConfig) => {
     if (!currentUser) return;
     persistPreferencesAndSync({ ...currentUser, gridConfig: newConfig });
+  };
+
+  const handleToggleUnitSystem = () => {
+    if (!currentUser) return;
+    const newUnit = currentUser.unitSystem === "metric" ? "imperial" : "metric";
+    persistPreferencesAndSync({ ...currentUser, unitSystem: newUnit });
   };
 
   // Background style pairings matching focal station conditions
@@ -215,7 +252,7 @@ export default function App() {
   };
 
   const bgStyles = getBackdropStyles(weather?.current.condition, weather?.hourly?.[0]?.time);
-  const isMetric = currentUser?.unitSystem === "metric" ?? true;
+  const isMetric = currentUser?.unitSystem === "metric" || !currentUser;
   const config = currentUser?.gridConfig || DEFAULT_GRID_CONFIG;
 
   const getHighLow = () => {
@@ -229,7 +266,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? bgStyles : `bg-gradient-to-b ${bgStyles}`} text-white font-sans transition-colors duration-1000`}>
-      <div className="max-w-2xl mx-auto min-h-screen flex flex-col pt-safe">
+      <div className="max-w-7xl mx-auto min-h-screen flex flex-col">
         
         <AuthBar
           user={currentUser}
@@ -237,9 +274,10 @@ export default function App() {
           onSignOut={handleAuthSignOut}
           syncStatus={syncStatus}
           onTriggerManualSync={() => currentUser && persistPreferencesAndSync(currentUser)}
+          onOpenProfile={() => setIsProfileOpen(true)}
         />
 
-        <div className="px-4 py-2 z-30 relative">
+        <div className="px-4 lg:px-8 py-2 z-30 relative">
           <CitySearch
             onSearch={fetchWeather}
             savedCities={currentUser?.savedCities || []}
@@ -255,47 +293,59 @@ export default function App() {
           </div>
         ) : (
           weather && (
-            <div className="flex-1 overflow-y-auto no-scrollbar pb-24 px-4 space-y-4 z-10 relative">
-              
-              {/* Hero Section */}
-              <div className="flex flex-col items-center justify-center py-8 text-shadow-sm">
-                <h1 className="text-3xl font-normal tracking-wide drop-shadow-md">
-                  {weather.city}
-                </h1>
-                <div className="text-[6rem] font-extralight tracking-tighter leading-none mt-1 drop-shadow-lg">
-                  {isMetric
-                    ? `${Math.round(weather.current.temp)}°`
-                    : `${Math.round((weather.current.temp * 9) / 5 + 32)}°`}
+            <div className="flex-1 overflow-y-auto pb-24 px-4 lg:px-8 z-10 relative">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                
+                {/* Main Content */}
+                <div className="xl:col-span-8 space-y-6">
+                  {/* Hero Section */}
+                  <div className="flex flex-col items-center justify-center py-8 text-shadow-sm">
+                    <h1 className="text-3xl md:text-4xl font-normal tracking-wide drop-shadow-md">
+                      {weather.city}
+                    </h1>
+                    <div className="text-[5rem] md:text-[7rem] font-extralight tracking-tighter leading-none mt-1 drop-shadow-lg">
+                      {isMetric
+                        ? `${Math.round(weather.current.temp)}°`
+                        : `${Math.round((weather.current.temp * 9) / 5 + 32)}°`}
+                    </div>
+                    <div className="text-xl md:text-2xl font-medium tracking-wide drop-shadow-md capitalize">
+                      {weather.current.description}
+                    </div>
+                    <div className="text-lg md:text-xl font-medium drop-shadow-md flex gap-3 mt-1">
+                      <span>H:{h}°</span>
+                      <span>L:{l}°</span>
+                    </div>
+                  </div>
+
+                  {/* Hourly Forecast */}
+                  {config.hourlyForecast && (
+                    <HourlyForecastSlider hourly={weather.hourly} unitSystem={currentUser?.unitSystem || "metric"} />
+                  )}
+
+                  {/* Daily Forecast */}
+                  {config.dailyForecast && (
+                    <DailyForecastList forecast={weather.forecast} unitSystem={currentUser?.unitSystem || "metric"} />
+                  )}
                 </div>
-                <div className="text-xl font-medium tracking-wide drop-shadow-md capitalize">
-                  {weather.current.description}
-                </div>
-                <div className="text-lg font-medium drop-shadow-md flex gap-3 mt-1">
-                  <span>H:{h}°</span>
-                  <span>L:{l}°</span>
+
+                {/* Sidebar */}
+                <div className="xl:col-span-4 space-y-6">
+                  {/* Historical Charts */}
+                  {config.historicalCharts && (
+                    <HistoricalCharts data={weather.historical} unitSystem={currentUser?.unitSystem || "metric"} />
+                  )}
+
+                  {/* Dashboard Grid */}
+                  <DashboardGrid
+                    current={weather.current}
+                    alerts={config.realTimeAlerts ? weather.alerts : []}
+                    unitSystem={currentUser?.unitSystem || "metric"}
+                    aiBriefing={config.aiBriefing ? weather.aiBriefing : ""}
+                    aiPersonalNotes={config.aiBriefing ? weather.aiPersonalNotes : ""}
+                    config={config}
+                  />
                 </div>
               </div>
-
-              {/* Customizable Widgets */}
-              {config.hourlyForecast && (
-                <HourlyForecastSlider hourly={weather.hourly} unitSystem={currentUser?.unitSystem || "metric"} />
-              )}
-
-              {config.dailyForecast && (
-                <DailyForecastList forecast={weather.forecast} unitSystem={currentUser?.unitSystem || "metric"} />
-              )}
-
-              {config.historicalCharts && (
-                <HistoricalCharts data={weather.historical} unitSystem={currentUser?.unitSystem || "metric"} />
-              )}
-
-              <DashboardGrid
-                current={weather.current}
-                alerts={config.realTimeAlerts ? weather.alerts : []}
-                unitSystem={currentUser?.unitSystem || "metric"}
-                aiBriefing={config.aiBriefing ? weather.aiBriefing : ""}
-                aiPersonalNotes={config.aiBriefing ? weather.aiPersonalNotes : ""}
-              />
 
               <div className="text-center text-white/40 text-xs py-8">
                 Weather Data Provided by OpenWeather
@@ -310,7 +360,20 @@ export default function App() {
         onUpdate={handleUpdateConfig} 
         isDarkMode={isDarkMode}
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        unitSystem={currentUser?.unitSystem || "metric"}
+        onToggleUnitSystem={handleToggleUnitSystem}
       />
+
+      {isProfileOpen && (
+        <UserProfile
+          user={currentUser}
+          onClose={() => setIsProfileOpen(false)}
+          onAddCity={handleAddCity}
+          onRemoveCity={handleRemoveCity}
+          onSelectCity={handleSelectCity}
+          activeCity={activeCity}
+        />
+      )}
     </div>
   );
 }

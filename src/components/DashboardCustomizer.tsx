@@ -7,9 +7,11 @@ interface DashboardCustomizerProps {
   onUpdate: (newConfig: CustomizableGridConfig) => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
+  unitSystem: "metric" | "imperial";
+  onToggleUnitSystem: () => void;
 }
 
-export default function DashboardCustomizer({ config, onUpdate, isDarkMode, onToggleDarkMode }: DashboardCustomizerProps) {
+export default function DashboardCustomizer({ config, onUpdate, isDarkMode, onToggleDarkMode, unitSystem, onToggleUnitSystem }: DashboardCustomizerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleWidget = (key: keyof CustomizableGridConfig) => {
@@ -27,6 +29,7 @@ export default function DashboardCustomizer({ config, onUpdate, isDarkMode, onTo
     { key: "windSystem", label: "Wind Conditions" },
     { key: "sunAndUv", label: "Sun & UV Index" },
     { key: "aiBriefing", label: "Weather Insights" },
+    { key: "realTimeAlerts", label: "Real-Time Alerts" },
   ];
 
   return (
@@ -65,6 +68,18 @@ export default function DashboardCustomizer({ config, onUpdate, isDarkMode, onTo
                       isDarkMode ? "translate-x-7" : "translate-x-1"
                     }`}
                   />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Temperature Unit</span>
+                <button
+                  onClick={onToggleUnitSystem}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <span className="text-sm font-bold">
+                    {unitSystem === "metric" ? "°C" : "°F"}
+                  </span>
                 </button>
               </div>
             </div>
