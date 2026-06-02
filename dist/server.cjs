@@ -25,30 +25,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var import_express = __toESM(require("express"), 1);
 var import_path = __toESM(require("path"), 1);
 var import_vite = require("vite");
-var import_genai = require("@google/genai");
-var import_dotenv = __toESM(require("dotenv"), 1);
-import_dotenv.default.config();
 var app = (0, import_express.default)();
 var PORT = 3e3;
 app.use(import_express.default.json());
-var aiClient = null;
-function getGeminiClient() {
-  if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key || key === "MY_GEMINI_API_KEY") {
-      throw new Error("GEMINI_API_KEY environment variable is not set up yet.");
-    }
-    aiClient = new import_genai.GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build"
-        }
-      }
-    });
-  }
-  return aiClient;
-}
 function generateRealisticFallbackWeather(city) {
   const cleanCity = city.trim();
   const lowercaseCity = cleanCity.toLowerCase();
@@ -406,8 +385,8 @@ function buildPayloadFromOWM(city, weatherData, forecastData) {
       expires: "09:30 PM"
     });
   }
-  const aiBriefing = `Active sensors in ${oName}, ${country} are reporting ${temp}\xB0C under a ${description} atmosphere. Pressures are stable at ${pressure} hPa with relative ambient humidity measuring ${humidity}%.`;
-  const aiPersonalNotes = `With a feels-like margin of ${feelsLike}\xB0C under ${description}, ${condition === "Rain" ? "an umbrella or water-resistant layer is handy." : condition === "Snow" ? "heavy insulated winter coats should be worn." : condition === "Clear" ? "it's an exceptional climate window for strolls; wear sunscreen." : "comfortable light layers are completely sufficient."}`;
+  const aiBriefing = `Currently ${temp}\xB0C with ${description} in ${oName}, ${country}. Pressure at ${pressure} hPa with ${humidity}% humidity.`;
+  const aiPersonalNotes = condition === "Rain" ? "Bring an umbrella or water-resistant jacket." : condition === "Snow" ? "Wear warm winter clothing and boots." : condition === "Clear" && temp > 25 ? "Great weather! Stay hydrated and wear sunscreen." : temp < 10 ? "Bundle up with warm layers." : "Perfect weather for outdoor activities.";
   return {
     city: oName,
     country,
@@ -446,47 +425,16 @@ app.get("/api/weather", async (req, res) => {
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
     const weatherRes = await fetch(weatherUrl);
     if (!weatherRes.ok) {
-      throw new Error(`OpenWeatherMap city lookup failed for "${city}": ${weatherRes.statusText}`);
+      if (weatherRes.status === 404) {
+        return res.status(404).json({ error: `City "${city}" not found` });
+      }
+      throw new Error(`OpenWeatherMap API error: ${weatherRes.statusText}`);
     }
     const weatherData = await weatherRes.json();
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
     const forecastRes = await fetch(forecastUrl).catch(() => null);
     const forecastData = forecastRes && forecastRes.ok ? await forecastRes.json() : null;
     const payload = buildPayloadFromOWM(city, weatherData, forecastData);
-    try {
-      const ai = getGeminiClient();
-      const promptText = `Analyze the target climate details for ${payload.city}, ${payload.country}:
-- Temperature: ${payload.current.temp}\xB0C
-- Condition: ${payload.current.condition} (${payload.current.description})
-- Wind: ${payload.current.windSpeed} m/s, Humidity: ${payload.current.humidity}%
-
-Please provide:
-1. "aiBriefing": A polished, professional 2-3 sentence overview briefing summarizing today's active weather.
-2. "aiPersonalNotes": A friendly tailored 2-sentence clothing or outdoor plan recommendation.
-
-Format the response strictly as valid JSON with exactly the headers: "aiBriefing" and "aiPersonalNotes". Do not add any markdown formatting or extra text outside JSON.`;
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: promptText,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: import_genai.Type.OBJECT,
-            properties: {
-              aiBriefing: { type: import_genai.Type.STRING },
-              aiPersonalNotes: { type: import_genai.Type.STRING }
-            },
-            required: ["aiBriefing", "aiPersonalNotes"]
-          }
-        }
-      });
-      if (response.text) {
-        const aiData = JSON.parse(response.text.trim());
-        payload.aiBriefing = aiData.aiBriefing || payload.aiBriefing;
-        payload.aiPersonalNotes = aiData.aiPersonalNotes || payload.aiPersonalNotes;
-      }
-    } catch {
-    }
     return res.json(payload);
   } catch (error) {
     console.warn(`[WARNING] OpenWeatherMap fetch error: "${error.message}". Using fallback generator.`);
