@@ -50,11 +50,11 @@ export default function DashboardGrid({
   const showAIBriefing = aiBriefing || aiPersonalNotes;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3">
       
       {/* Alerts */}
       {alerts.length > 0 && (
-        <div className="col-span-2 md:col-span-3 lg:col-span-2 xl:col-span-2 glass-panel p-4 bg-red-900/30 border-red-500/30">
+        <div className="col-span-2 md:col-span-4 lg:col-span-4 xl:col-span-4 glass-panel p-4 bg-red-900/30 border-red-500/30">
           <div className="flex items-center gap-1.5 text-red-300 mb-2 pb-2 border-b border-red-500/20">
             <ShieldAlert className="w-4 h-4 animate-pulse" />
             <span className="text-[11px] font-bold uppercase tracking-wider">
@@ -76,31 +76,6 @@ export default function DashboardGrid({
         </div>
       )}
 
-      {/* AI Briefing */}
-      {showAIBriefing && (
-        <div className="col-span-2 md:col-span-3 lg:col-span-2 xl:col-span-2 glass-panel p-4">
-          <div className="flex items-center gap-1.5 text-white/70 mb-2 pb-2 border-b border-white/10">
-            <BrainCircuit className="w-3.5 h-3.5" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider">
-              AI Weather Insights
-            </span>
-          </div>
-          <p className="text-sm text-white/90 leading-relaxed mt-2">
-            {aiBriefing}
-          </p>
-          {aiPersonalNotes && (
-            <div className="mt-3 pt-3 border-t border-white/10">
-              <div className="flex items-center gap-1.5 text-white/60 mb-1">
-                <Bookmark className="w-3 h-3" />
-                <span className="text-[10px] uppercase font-bold tracking-wider">Advice</span>
-              </div>
-              <p className="text-xs text-white/80 italic">
-                {aiPersonalNotes}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* UV Index */}
       {config.sunAndUv && (
@@ -200,6 +175,32 @@ export default function DashboardGrid({
               {current.pressure > 1013 ? "High pressure." : "Low pressure."}
             </span>
           </div>
+        </div>
+      )}
+
+      {/* AI Briefing - Placed at the bottom */}
+      {showAIBriefing && config.aiBriefing && (
+        <div className="col-span-2 md:col-span-4 lg:col-span-4 xl:col-span-4 glass-panel p-4">
+          <div className="flex items-center gap-1.5 text-white/70 mb-2 pb-2 border-b border-white/10">
+            <BrainCircuit className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider">
+              AI Weather Insights
+            </span>
+          </div>
+          <p className="text-sm text-white/90 leading-relaxed mt-2">
+            {aiBriefing}
+          </p>
+          {aiPersonalNotes && (
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <div className="flex items-center gap-1.5 text-white/60 mb-1">
+                <Bookmark className="w-3 h-3" />
+                <span className="text-[10px] uppercase font-bold tracking-wider">Advice</span>
+              </div>
+              <p className="text-xs text-white/80 italic">
+                {aiPersonalNotes}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

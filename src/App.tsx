@@ -58,26 +58,38 @@ export default function App() {
   // Mount real-time alert listener
   useWeatherAlerts(currentUser);
 
-  // Fetch core weather for a specific city using OWM API
-  const fetchWeather = useCallback(async (city: string) => {
+  // Fetch core weather for a specific city or coords using OWM API
+  const fetchWeather = useCallback(async (location: string | { lat: number; lon: number }) => {
     setIsSearching(true);
     try {
-      const data = await fetchWeatherData(city);
+      const data = await fetchWeatherData(location);
       setWeather(data);
       setActiveCity(data.city);
     } catch (err: any) {
       console.error("Failed to fetch weather", err);
-      alert(`Unable to fetch weather for "${city}". Please check the city name and try again.`);
     } finally {
       setIsSearching(false);
       setIsLoading(false);
     }
   }, []);
 
-  // Trigger weather on mount
+  // Trigger weather on mount with Geolocation
   useEffect(() => {
-    fetchWeather(activeCity);
-  }, [fetchWeather, activeCity]);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          fetchWeather({ lat: position.coords.latitude, lon: position.coords.longitude });
+        },
+        (error) => {
+          console.warn("Geolocation denied or failed. Falling back to default city.");
+          fetchWeather("London"); // Fallback to a major city instead of Singapore
+        },
+        { enableHighAccuracy: false, maximumAge: 600000, timeout: 5000 }
+      );
+    } else {
+      fetchWeather("London");
+    }
+  }, [fetchWeather]);
 
   // Sync state upward to Firestore or offline LocalStorage
   const persistPreferencesAndSync = async (nextPrefs: UserDashboardPreferences) => {
@@ -252,7 +264,7 @@ export default function App() {
   };
 
   const bgStyles = getBackdropStyles(weather?.current.condition, weather?.hourly?.[0]?.time);
-  const isMetric = currentUser?.unitSystem === "metric" || !currentUser;
+  const isMetric = currentUser ? currentUser.unitSystem === "metric" : true;
   const config = currentUser?.gridConfig || DEFAULT_GRID_CONFIG;
 
   const getHighLow = () => {
@@ -294,57 +306,51 @@ export default function App() {
         ) : (
           weather && (
             <div className="flex-1 overflow-y-auto pb-24 px-4 lg:px-8 z-10 relative">
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+              <div className="flex flex-col space-y-6">
                 
-                {/* Main Content */}
-                <div className="xl:col-span-8 space-y-6">
-                  {/* Hero Section */}
-                  <div className="flex flex-col items-center justify-center py-8 text-shadow-sm">
-                    <h1 className="text-3xl md:text-4xl font-normal tracking-wide drop-shadow-md">
-                      {weather.city}
-                    </h1>
-                    <div className="text-[5rem] md:text-[7rem] font-extralight tracking-tighter leading-none mt-1 drop-shadow-lg">
-                      {isMetric
-                        ? `${Math.round(weather.current.temp)}°`
-                        : `${Math.round((weather.current.temp * 9) / 5 + 32)}°`}
-                    </div>
-                    <div className="text-xl md:text-2xl font-medium tracking-wide drop-shadow-md capitalize">
-                      {weather.current.description}
-                    </div>
-                    <div className="text-lg md:text-xl font-medium drop-shadow-md flex gap-3 mt-1">
-                      <span>H:{h}°</span>
-                      <span>L:{l}°</span>
-                    </div>
+                {/* Hero Section */}
+                <div className="flex flex-col items-center justify-center py-8 text-shadow-sm">
+                  <h1 className="text-3xl md:text-4xl font-normal tracking-wide drop-shadow-md">
+                    {weather.city}
+                  </h1>
+                  <div className="text-[5rem] md:text-[7rem] font-extralight tracking-tighter leading-none mt-1 drop-shadow-lg">
+                    {isMetric
+                      ? `${Math.round(weather.current.temp)}°`
+                      : `${Math.round((weather.current.temp * 9) / 5 + 32)}°`}
                   </div>
-
-                  {/* Hourly Forecast */}
-                  {config.hourlyForecast && (
-                    <HourlyForecastSlider hourly={weather.hourly} unitSystem={currentUser?.unitSystem || "metric"} />
-                  )}
-
-                  {/* Daily Forecast */}
-                  {config.dailyForecast && (
-                    <DailyForecastList forecast={weather.forecast} unitSystem={currentUser?.unitSystem || "metric"} />
-                  )}
+                  <div className="text-xl md:text-2xl font-medium tracking-wide drop-shadow-md capitalize">
+                    {weather.current.description}
+                  </div>
+                  <div className="text-lg md:text-xl font-medium drop-shadow-md flex gap-3 mt-1">
+                    <span>H:{h}°</span>
+                    <span>L:{l}°</span>
+                  </div>
                 </div>
 
-                {/* Sidebar */}
-                <div className="xl:col-span-4 space-y-6">
-                  {/* Historical Charts */}
-                  {config.historicalCharts && (
-                    <HistoricalCharts data={weather.historical} unitSystem={currentUser?.unitSystem || "metric"} />
-                  )}
+                {/* Hourly Forecast */}
+                {config.hourlyForecast && (
+                  <HourlyForecastSlider hourly={weather.hourly} unitSystem={currentUser?.unitSystem || "metric"} />
+                )}
 
-                  {/* Dashboard Grid */}
-                  <DashboardGrid
-                    current={weather.current}
-                    alerts={config.realTimeAlerts ? weather.alerts : []}
-                    unitSystem={currentUser?.unitSystem || "metric"}
-                    aiBriefing={config.aiBriefing ? weather.aiBriefing : ""}
-                    aiPersonalNotes={config.aiBriefing ? weather.aiPersonalNotes : ""}
-                    config={config}
-                  />
-                </div>
+                {/* Daily Forecast */}
+                {config.dailyForecast && (
+                  <DailyForecastList forecast={weather.forecast} unitSystem={currentUser?.unitSystem || "metric"} />
+                )}
+
+                {/* Historical Charts */}
+                {config.historicalCharts && (
+                  <HistoricalCharts data={weather.historical} unitSystem={currentUser?.unitSystem || "metric"} />
+                )}
+
+                {/* Dashboard Grid */}
+                <DashboardGrid
+                  current={weather.current}
+                  alerts={config.realTimeAlerts ? weather.alerts : []}
+                  unitSystem={currentUser?.unitSystem || "metric"}
+                  aiBriefing={config.aiBriefing ? weather.aiBriefing : ""}
+                  aiPersonalNotes={config.aiBriefing ? weather.aiPersonalNotes : ""}
+                  config={config}
+                />
               </div>
 
               <div className="text-center text-white/40 text-xs py-8">

@@ -38,7 +38,7 @@ export default function DailyForecastList({ forecast, unitSystem }: DailyForecas
       <div className="flex items-center gap-1.5 text-white/70 mb-3 border-b border-white/10 pb-2">
         <Calendar className="w-3.5 h-3.5" />
         <span className="text-[11px] font-semibold uppercase tracking-wider">
-          7-Day Forecast
+          6-Day Forecast
         </span>
       </div>
 
